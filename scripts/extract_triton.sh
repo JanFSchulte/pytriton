@@ -31,6 +31,7 @@ docker cp "${PYTRITON_CONTAINER_ID}":/opt/tritonserver/lib "${TARGET_DIR}/extern
 docker cp "${PYTRITON_CONTAINER_ID}":/opt/tritonserver/caches/local/libtritoncache_local.so "${TARGET_DIR}/caches/local"
 docker cp "${PYTRITON_CONTAINER_ID}":/opt/tritonserver/backends/python/libtriton_python.so "${TARGET_DIR}"/backends/python
 docker cp "${PYTRITON_CONTAINER_ID}":/opt/tritonserver/backends/python/triton_python_backend_utils.py "${TARGET_DIR}"/backends/python
+docker cp "${PYTRITON_CONTAINER_ID}":/opt/tritonserver/backends/identity/libtriton_identity.so "${TARGET_DIR}/backends/python/identity"
 docker cp "${PYTRITON_CONTAINER_ID}:/opt/workspace/python_backend_stubs" "${TARGET_DIR}"
 
 mkdir -p "${TARGET_DIR}"/external_libs
@@ -38,15 +39,13 @@ function extract_binary_dependencies() {
   BINARY_PATH="${1}"
   export BINARY_PATH
   echo "==== Extracting dependencies of ${BINARY_PATH}"
-  DEPS_SYMLINKS=$(docker exec -e BINARY_PATH  "${PYTRITON_CONTAINER_ID}" bash -c 'ldd ${BINARY_PATH} | awk "/=>/ {print \$3}" | sort -u | xargs realpath -s | sed "s/,\$/\n/"')
-  for DEP in ${DEPS_SYMLINKS}
-  do
-      docker cp "${PYTRITON_CONTAINER_ID}:${DEP}" "${TARGET_DIR}/external_libs"
+  DEPS_SYMLINKS=$(docker exec -e BINARY_PATH "${PYTRITON_CONTAINER_ID}" bash -c 'ldd ${BINARY_PATH} | awk "/=>/ {print \$3}" | sort -u | xargs realpath -s | sed "s/,\$/\n/"')
+  for DEP in ${DEPS_SYMLINKS}; do
+    docker cp "${PYTRITON_CONTAINER_ID}:${DEP}" "${TARGET_DIR}/external_libs"
   done
   DEPS_REALPATH=$(docker exec -e BINARY_PATH "${PYTRITON_CONTAINER_ID}" bash -c 'ldd ${BINARY_PATH} | awk "/=>/ {print \$3}" | sort -u | xargs realpath | sed "s/,\$/\n/"')
-  for DEP in ${DEPS_REALPATH}
-  do
-      docker cp "${PYTRITON_CONTAINER_ID}:${DEP}" "${TARGET_DIR}/external_libs"
+  for DEP in ${DEPS_REALPATH}; do
+    docker cp "${PYTRITON_CONTAINER_ID}:${DEP}" "${TARGET_DIR}/external_libs"
   done
 }
 
@@ -55,5 +54,6 @@ extract_binary_dependencies /opt/tritonserver/lib/libtritonserver.so
 extract_binary_dependencies /opt/tritonserver/caches/local/libtritoncache_local.so
 extract_binary_dependencies /opt/tritonserver/backends/python/libtriton_python.so
 extract_binary_dependencies /opt/tritonserver/backends/python/triton_python_backend_stub
+extract_binary_dependencies /opt/tritonserver/backends/identity/libtriton_identity.so
 
 docker stop "${PYTRITON_CONTAINER_ID}"
