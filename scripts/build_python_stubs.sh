@@ -12,7 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+echo "trying to build the stubs"
 set -xe
+
+export LC_CTYPE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
 
 if [[ -z ${NVIDIA_TRITON_SERVER_VERSION} ]]; then
   echo "The NVIDIA_TRITON_SERVER_VERSION variable is not set."

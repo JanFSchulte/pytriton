@@ -21,12 +21,12 @@ set -x
 # check if docker image name has docker registry prefix to not try to pull development image
 PULL_RESULT="1"
 if [[ "${PYTRITON_IMAGE_NAME}" == *"/"* && "${PYTRITON_IMAGE_REBUILD}" != "1" ]]; then
-  docker pull -q --platform "${PLATFORM}" "${PYTRITON_IMAGE_NAME}"
+  singularity pull "docker://${PYTRITON_IMAGE_NAME}"
   PULL_RESULT=$?
 fi
 
 # fetch base image earlier as in some environments there are issues with pulling base images while building
-docker pull -q --platform "${PLATFORM}" "${TRITON_SERVER_IMAGE}"
+singularity pull  "docker://${TRITON_SERVER_IMAGE}"
 
 BUILD_ARGS=${BUILD_ARGS:-""}
 if [[ "${PULL_RESULT}" != "0" ]]; then
@@ -37,10 +37,5 @@ if [[ "${PULL_RESULT}" != "0" ]]; then
     BUILD_ARGS+=" --build-arg MAKEFLAGS=${PYTRITON_MAKEFLAGS}"
   fi
 
-  docker buildx build --force-rm \
-    --platform "${PLATFORM}" \
-    --build-arg FROM_IMAGE="${TRITON_SERVER_IMAGE}" \
-    $BUILD_ARGS \
-    --file scripts/Dockerfile.build \
-    --tag "${PYTRITON_IMAGE_NAME}" ${DOCKER_BUILD_ADDITIONAL_FLAGS} .
+  singularity build pytriton_23.04.sif scripts/pytriton.def
 fi

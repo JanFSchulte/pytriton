@@ -41,7 +41,7 @@ TRITONSERVER_IMAGE_VERSION ?= 23.04
 TRITONSERVER_IMAGE_NAME = nvcr.io/nvidia/tritonserver:$(TRITONSERVER_IMAGE_VERSION)-pyt-python-py3
 TRITONSERVER_OUTPUT_DIR = ${PWD}/pytriton/tritonserver
 TRITONSERVER_BASENAME = pytriton
-PYTRITON_IMAGE_NAME = $(TRITONSERVER_BASENAME):$(TEST_CONTAINER_VERSION)
+PYTRITON_IMAGE_NAME = $(TRITONSERVER_BASENAME)_$(TEST_CONTAINER_VERSION).sif
 # to set PLATFORM from outside, use: make PLATFORM=linux/arm64;
 # correct values are: linux/amd64 (default), linux/arm64
 PLATFORM=linux/amd64
@@ -106,6 +106,15 @@ dist: clean build-triton extract-triton ## builds source and wheel package
 	find ./dist -iname *-linux*.whl -type f -delete
 	ls -lh dist
 	twine check dist/*
+
+distonly: ## builds just the wheel package
+	bash ./scripts/build_wheel.sh $(PLATFORM)
+	ls -lh dist
+	find ./dist -iname *-linux*.whl -type f -exec bash ./scripts/add_libs_to_wheel.sh $(PYTRITON_IMAGE_NAME) $(TRITONSERVER_OUTPUT_DIR) {} $(PLATFORM) \;
+	find ./dist -iname *-linux*.whl -type f -delete
+	ls -lh dist
+	twine check dist/*
+
 
 build-triton: ## build Triton with Python Stubs
 	bash ./scripts/build_triton.sh $(TRITONSERVER_IMAGE_NAME) $(PYTRITON_IMAGE_NAME) $(PLATFORM)
